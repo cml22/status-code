@@ -1,6 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
-import csv
+import streamlit as st
 
 def get_status_code_and_canonical(url):
     """
@@ -24,35 +24,39 @@ def get_status_code_and_canonical(url):
     except requests.RequestException as e:
         return "Erreur", str(e)
 
-def process_url_file(input_file, output_file):
+def process_urls(url_list):
     """
-    Lit un fichier d'URLs, obtient les informations pour chaque URL, et enregistre les résultats.
-    :param input_file: Chemin du fichier contenant les URLs (une URL par ligne)
-    :param output_file: Chemin du fichier CSV de sortie avec les résultats
+    Traite une liste d'URLs et retourne leurs informations.
+    :param url_list: Liste d'URLs
+    :return: Liste des résultats contenant [URL, Status Code, Canonical URL]
     """
     results = []
-
-    with open(input_file, 'r') as file:
-        urls = file.readlines()
-
-    print("Traitement des URLs...")
-    for url in urls:
+    for url in url_list:
         url = url.strip()  # Supprime les espaces inutiles
         if url:
-            print(f"Vérification de : {url}")
             status_code, canonical = get_status_code_and_canonical(url)
             results.append([url, status_code, canonical])
+    return results
 
-    # Écrire les résultats dans un fichier CSV
-    with open(output_file, 'w', newline='', encoding='utf-8') as csvfile:
-        writer = csv.writer(csvfile)
-        writer.writerow(["URL", "Status Code", "Canonical URL"])
-        writer.writerows(results)
+# Interface Streamlit
+st.title("Vérification des Status Codes et URLs Canoniques")
+
+# Entrée de l'utilisateur
+urls_input = st.text_area(
+    "Entrez les URLs (une par ligne) :", 
+    placeholder="https://www.example.com\nhttps://www.google.com"
+)
+
+if st.button("Vérifier les URLs"):
+    # Diviser les URLs en lignes et les traiter
+    url_list = urls_input.strip().split("\n")
     
-    print(f"Résultats enregistrés dans {output_file}")
-
-# Exemple d'utilisation
-if __name__ == "__main__":
-    input_file = "urls.txt"  # Remplacez par le chemin de votre fichier d'URLs
-    output_file = "results.csv"  # Fichier de sortie
-    process_url_file(input_file, output_file)
+    if url_list:
+        st.info("Traitement des URLs en cours...")
+        results = process_urls(url_list)
+        
+        # Afficher les résultats dans un tableau
+        st.success("Traitement terminé ! Voici les résultats :")
+        st.table(results)
+    else:
+        st.warning("Veuillez entrer au moins une URL.")
